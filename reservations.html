@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablewise — Reservations</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:        #0d1421;
+  --navy-mid:    #162035;
+  --navy-card:   #1c2a45;
+  --amber:       #e8a44a;
+  --amber-dim:   rgba(232,164,74,0.18);
+  --amber-glow:  rgba(232,164,74,0.10);
+  --amber-b:     rgba(232,164,74,0.28);
+  --purple:      #a279e8;
+  --purple-dim:  rgba(162,121,232,0.18);
+  --purple-glow: rgba(162,121,232,0.10);
+  --purple-b:    rgba(162,121,232,0.28);
+  --green:       #4caf82;
+  --red:         #e05c5c;
+  --text-1:      #f0ece4;
+  --text-2:      #8a9ab8;
+  --text-3:      #4a5870;
+  --border:      rgba(255,255,255,0.07);
+  --seat-free:   #1e2f4a;
+  --seat-border: #2e4268;
+  --radius:      14px;
+  --radius-sm:   8px;
+  --closed-bg:   rgba(0,0,0,0.25);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--navy); color:var(--text-1); height:100vh; display:flex; overflow:hidden; }
+
+/* SIDEBAR */
+.sidebar { width:72px; background:var(--navy-mid); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:6px; flex-shrink:0; }
+.logo { width:38px; height:38px; background:var(--amber); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'DM Serif Display',serif; font-size:18px; color:var(--navy); margin-bottom:20px; cursor:pointer; flex-shrink:0; }
+.nav-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; color:var(--text-3); }
+.nav-icon:hover,.nav-icon.active { background:var(--amber-glow); color:var(--amber); }
+.nav-icon svg { width:20px; height:20px; }
+.sidebar-spacer { flex:1; }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* TOPBAR */
+.topbar { height:64px; background:var(--navy-mid); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; gap:16px; flex-shrink:0; }
+.venue-pill { display:flex; align-items:center; gap:10px; background:var(--navy-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 14px; }
+.venue-dot { width:8px; height:8px; border-radius:50%; background:var(--amber); flex-shrink:0; }
+.venue-name { font-size:14px; font-weight:500; }
+.venue-type { font-size:11px; color:var(--text-2); }
+.lang-toggle { display:flex; background:var(--navy); border:1px solid var(--border); border-radius:20px; padding:2px; gap:2px; }
+.lang-btn { padding:3px 10px; border-radius:16px; font-size:11px; font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--text-3); font-family:'DM Sans',sans-serif; transition:all .15s; }
+.lang-btn.active { background:var(--navy-card); color:var(--text-1); }
+.date-nav { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.date-display { font-family:'DM Serif Display',serif; font-size:17px; min-width:240px; text-align:center; }
+.nav-btn { width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:transparent; color:var(--text-2); cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.nav-btn:hover { border-color:var(--amber-b); color:var(--amber); }
+.today-btn { padding:0 12px; height:32px; border:1px solid var(--amber-b); border-radius:8px; background:var(--amber-glow); color:var(--amber); font-size:12px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+.today-btn:hover { background:var(--amber); color:var(--navy); }
+.back-btn { padding:0 14px; height:32px; border:1px solid var(--amber-b); border-radius:8px; background:var(--amber-glow); color:var(--amber); font-size:12px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+.back-btn:hover { background:var(--amber); color:var(--navy); }
+
+/* VIEW CONTROLS */
+.view-controls { padding:12px 24px; background:var(--navy-mid); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.view-tabs { display:flex; background:var(--navy); border-radius:var(--radius-sm); padding:3px; border:1px solid var(--border); }
+.view-tab { padding:5px 14px; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; transition:all .18s; color:var(--text-2); }
+.view-tab.active { background:var(--amber); color:var(--navy); }
+.svc-tabs { display:flex; gap:6px; margin-left:12px; }
+.svc-tab { padding:5px 14px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; transition:all .18s; border:1px solid var(--border); color:var(--text-2); }
+.svc-tab.active.lunch  { background:var(--amber-dim);  color:var(--amber);  border-color:var(--amber-b); }
+.svc-tab.active.dinner { background:var(--purple-dim); color:var(--purple); border-color:var(--purple-b); }
+.disp-tabs { display:flex; gap:6px; margin-left:auto; }
+.disp-tab { width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:transparent; color:var(--text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.disp-tab.active { background:var(--amber-glow); color:var(--amber); border-color:var(--amber-b); }
+.add-btn { display:flex; align-items:center; gap:7px; padding:7px 16px; background:var(--amber); color:var(--navy); border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; margin-left:8px; }
+.add-btn:hover { background:#f0b55c; transform:translateY(-1px); box-shadow:0 4px 16px rgba(232,164,74,.3); }
+
+/* CONTENT */
+.content { flex:1; overflow-y:auto; overflow-x:hidden; }
+.content::-webkit-scrollbar { width:4px; }
+.content::-webkit-scrollbar-thumb { background:var(--text-3); border-radius:4px; }
+
+/* DAY VIEW */
+.day-wrap { padding:24px; max-width:900px; margin:0 auto; animation:fadeIn .2s ease; }
+.service-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.svc-badge { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.svc-badge.lunch  { background:var(--amber-dim);  color:var(--amber);  border:1px solid var(--amber-b); }
+.svc-badge.dinner { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple-b); }
+.svc-hours { font-size:12px; color:var(--text-3); }
+.stat-pills { display:flex; gap:8px; margin-left:auto; }
+.stat-pill { padding:4px 12px; border-radius:20px; font-size:12px; background:var(--navy-card); border:1px solid var(--border); color:var(--text-2); display:flex; align-items:center; gap:5px; }
+.stat-pill .dot { width:6px; height:6px; border-radius:50%; }
+
+/* LIST */
+.list-table { width:100%; border-collapse:collapse; }
+.list-table th { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-3); padding:8px 16px; text-align:left; border-bottom:1px solid var(--border); }
+.list-table td { padding:0; border-bottom:1px solid var(--border); }
+.res-row { display:grid; grid-template-columns:190px 90px 80px 170px 1fr; align-items:center; padding:14px 16px; cursor:pointer; transition:background .15s; gap:12px; }
+.res-row:hover { background:var(--navy-card); }
+.res-row.empty { opacity:.3; }
+.res-row.empty:hover { opacity:.6; background:var(--navy-card); }
+.res-name { font-weight:500; font-size:14px; display:flex; align-items:center; gap:6px; }
+.tbl-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--navy-card); border:1px solid var(--border); font-size:10px; font-weight:600; color:var(--text-3); flex-shrink:0; }
+.res-guests { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text-2); }
+.res-time.lunch-t  { font-size:13px; font-weight:600; color:var(--amber); }
+.res-time.dinner-t { font-size:13px; font-weight:600; color:var(--purple); }
+.res-phone { font-size:12px; color:var(--text-3); }
+.res-note  { font-size:12px; color:var(--text-2); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.empty-hint { font-size:12px; color:var(--text-3); display:flex; align-items:center; gap:6px; }
+
+/* MAP */
+.map-wrap { padding:24px; }
+.map-legend { display:flex; gap:16px; margin-bottom:16px; font-size:12px; color:var(--text-2); align-items:center; }
+.leg-item { display:flex; align-items:center; gap:6px; }
+.leg-box { width:14px; height:14px; border-radius:3px; }
+.leg-box.free  { background:var(--seat-free); border:1px solid var(--seat-border); }
+.leg-box.l-tak { background:var(--amber-dim);  border:1px solid var(--amber-b); }
+.leg-box.d-tak { background:var(--purple-dim); border:1px solid var(--purple-b); }
+.floor-plan { position:relative; background:var(--navy-card); border:1px solid var(--border); border-radius:var(--radius); padding:28px; display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
+.floor-label { position:absolute; top:10px; left:14px; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); }
+.floor-divider { grid-column:1/-1; height:1px; background:var(--border); position:relative; margin:2px 0; }
+.floor-divider::after { content:'Terrace'; position:absolute; left:0; top:-8px; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); }
+.tbl-cell { aspect-ratio:1; border-radius:10px; border:1.5px solid var(--seat-border); background:var(--seat-free); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; transition:all .18s; position:relative; overflow:visible; }
+.tbl-cell:hover { border-color:var(--amber); background:var(--amber-glow); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.35); }
+.tbl-cell.taken-l { border-color:var(--amber-b); background:var(--amber-dim); }
+.tbl-cell.taken-d { border-color:var(--purple-b); background:var(--purple-dim); }
+.tbl-cell.taken-l:hover { background:rgba(232,164,74,.25); }
+.tbl-cell.taken-d:hover { background:rgba(162,121,232,.25); }
+.tbl-num { font-size:10px; font-weight:700; color:var(--text-3); letter-spacing:.05em; }
+.tbl-cell.taken-l .tbl-num { color:var(--amber); }
+.tbl-cell.taken-d .tbl-num { color:var(--purple); }
+.tbl-gname { font-size:9px; text-align:center; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+.tbl-cell.taken-l .tbl-gname { color:var(--amber); }
+.tbl-cell.taken-d .tbl-gname { color:var(--purple); }
+.tbl-cap { font-size:8px; color:var(--text-3); display:flex; align-items:center; gap:2px; }
+.tbl-tooltip { position:absolute; z-index:200; background:var(--navy-mid); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; min-width:160px; box-shadow:0 12px 40px rgba(0,0,0,.55); bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); pointer-events:none; opacity:0; transition:opacity .15s; white-space:nowrap; }
+.tbl-cell.taken-l .tbl-tooltip { border-color:var(--amber-b); }
+.tbl-cell.taken-d .tbl-tooltip { border-color:var(--purple-b); }
+.tbl-cell:hover .tbl-tooltip { opacity:1; }
+.tt-name { font-size:13px; font-weight:600; margin-bottom:5px; }
+.tt-row { font-size:11px; color:var(--text-2); margin-top:2px; }
+
+/* CLOSED */
+.closed-msg { display:flex; flex-direction:column; align-items:center; justify-content:center; height:280px; gap:12px; color:var(--text-3); text-align:center; padding:24px; }
+.closed-msg svg { opacity:.18; }
+.closed-msg h3 { font-family:'DM Serif Display',serif; font-size:20px; color:var(--text-2); }
+.set-link-btn { margin-top:4px; padding:7px 18px; background:var(--amber-glow); color:var(--amber); border:1px solid var(--amber-b); border-radius:8px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; }
+
+/* WEEK VIEW */
+.week-outer { display:flex; flex-direction:column; }
+.cal-hdr { display:grid; grid-template-columns:56px repeat(7,1fr); border-bottom:1px solid var(--border); background:var(--navy-mid); flex-shrink:0; }
+.hdr-cell { padding:10px 6px; text-align:center; font-size:10px; font-weight:600; color:var(--text-3); letter-spacing:.06em; text-transform:uppercase; border-right:1px solid var(--border); }
+.hdr-cell:last-child { border-right:none; }
+.hdr-num { display:block; font-size:19px; font-weight:300; color:var(--text-1); margin-top:2px; font-family:'DM Serif Display',serif; }
+.hdr-cell.today .hdr-num { color:var(--amber); }
+.hdr-cell.closed-h { opacity:.38; }
+.week-scroll { overflow-y:auto; flex:1; }
+.week-scroll::-webkit-scrollbar { width:4px; }
+.week-scroll::-webkit-scrollbar-thumb { background:var(--text-3); border-radius:4px; }
+.week-grid { display:grid; grid-template-columns:56px repeat(7,1fr); }
+.time-col { border-right:1px solid var(--border); }
+.time-slot { height:60px; display:flex; align-items:flex-start; padding:5px 6px; font-size:10px; color:var(--text-3); border-bottom:1px solid var(--border); }
+.day-col { border-right:1px solid var(--border); }
+.day-col:last-child { border-right:none; }
+.day-col.closed-col { background:var(--closed-bg); position:relative; }
+.day-slot { height:60px; border-bottom:1px solid var(--border); transition:background .12s; cursor:pointer; position:relative; }
+.day-slot:not(.svc-lunch):not(.svc-dinner):hover { background:rgba(255,255,255,.03); }
+/* Colored service slots — the slot row itself becomes the service block */
+.day-slot.svc-lunch  { background:var(--amber-dim);  border-bottom-color:rgba(232,164,74,.12); }
+.day-slot.svc-dinner { background:var(--purple-dim); border-bottom-color:rgba(162,121,232,.12); }
+.day-slot.svc-lunch:hover  { background:rgba(232,164,74,.28); }
+.day-slot.svc-dinner:hover { background:rgba(162,121,232,.28); }
+/* Label shown pinned to first slot of each service block */
+.slot-svc-label { position:absolute; top:5px; left:7px; right:4px; display:flex; align-items:baseline; gap:6px; pointer-events:none; }
+.ssl-name { font-size:10px; font-weight:700; }
+.ssl-info { font-size:9px; opacity:.7; }
+.svc-lunch  .ssl-name { color:var(--amber); }
+.svc-dinner .ssl-name { color:var(--purple); }
+.svc-lunch  .ssl-info { color:var(--amber); }
+.svc-dinner .ssl-info { color:var(--purple); }
+.closed-strip { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+.closed-strip-lbl { font-size:9px; color:var(--text-3); letter-spacing:.1em; text-transform:uppercase; writing-mode:vertical-rl; opacity:.5; }
+
+/* MONTH VIEW */
+.month-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.month-dow { text-align:center; padding:8px 4px; font-size:10px; font-weight:600; color:var(--text-3); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border); border-right:1px solid var(--border); }
+.month-dow:last-child { border-right:none; }
+.month-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px; min-height:100px; cursor:pointer; transition:background .15s; }
+.month-cell:nth-child(7n) { border-right:none; }
+.month-cell:hover { background:var(--amber-glow); }
+.month-cell.today-cell { background:rgba(232,164,74,.04); }
+.month-cell.closed-cell { background:var(--closed-bg); cursor:default; }
+.month-cell.closed-cell:hover { background:var(--closed-bg); }
+.month-cell.other-m { opacity:.35; }
+.m-day-num { font-size:13px; color:var(--text-2); margin-bottom:5px; }
+.month-cell.today-cell .m-day-num { color:var(--amber); font-weight:600; }
+.month-cell.closed-cell .m-day-num { color:var(--text-3); }
+.m-closed-tag { font-size:9px; color:var(--text-3); letter-spacing:.07em; text-transform:uppercase; }
+.m-pill { font-size:10px; padding:2px 7px; border-radius:4px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-pill.l-pill { background:var(--amber-dim);  color:var(--amber);  border:1px solid var(--amber-b); }
+.m-pill.d-pill { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple-b); }
+
+/* SETTINGS */
+.settings-wrap { padding:32px; max-width:720px; margin:0 auto; animation:fadeIn .2s ease; }
+.s-title { font-family:'DM Serif Display',serif; font-size:26px; margin-bottom:6px; }
+.s-sub { font-size:13px; color:var(--text-2); margin-bottom:32px; }
+.s-section { margin-bottom:32px; }
+.s-sec-title { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.s-card { background:var(--navy-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:12px; }
+.s-row { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+.s-row:last-child { margin-bottom:0; }
+.s-lbl { font-size:13px; color:var(--text-2); width:160px; flex-shrink:0; }
+.s-input { flex:1; padding:8px 12px; background:var(--navy); color:var(--text-1); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s; }
+.s-input:focus { border-color:var(--amber-b); }
+.s-input::placeholder { color:var(--text-3); }
+.dow-grid { display:flex; gap:8px; flex-wrap:wrap; }
+.dow-chk { display:none; }
+.dow-lbl { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid var(--border); color:var(--text-2); cursor:pointer; transition:all .15s; user-select:none; }
+.dow-chk:checked + .dow-lbl { background:rgba(224,92,92,.15); border-color:rgba(224,92,92,.4); color:var(--red); }
+.dow-note { font-size:11px; color:var(--text-3); margin-top:10px; }
+.sc-card { background:var(--navy-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:12px; }
+.sc-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.sc-badge { padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; }
+.sc-badge.lunch  { background:var(--amber-dim);  color:var(--amber);  border:1px solid var(--amber-b); }
+.sc-badge.dinner { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple-b); }
+.toggle { position:relative; width:40px; height:22px; margin-left:auto; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-sl { position:absolute; inset:0; background:var(--navy); border:1px solid var(--border); border-radius:11px; cursor:pointer; transition:.2s; }
+.toggle-sl::before { content:''; position:absolute; width:16px; height:16px; left:2px; top:2px; background:var(--text-3); border-radius:50%; transition:.2s; }
+.toggle input:checked + .toggle-sl { border-color:var(--amber-b); }
+.toggle input:checked + .toggle-sl::before { transform:translateX(18px); background:var(--amber); }
+.save-btn { padding:11px 28px; background:var(--amber); color:var(--navy); border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+.save-btn:hover { background:#f0b55c; box-shadow:0 4px 16px rgba(232,164,74,.3); }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal { background:var(--navy-mid); border:1px solid var(--amber-b); border-radius:18px; padding:28px; width:420px; max-width:95vw; transform:translateY(14px) scale(.97); transition:all .2s; box-shadow:0 24px 80px rgba(0,0,0,.6); }
+.modal-overlay.open .modal { transform:translateY(0) scale(1); }
+.modal-hdr { display:flex; align-items:center; margin-bottom:22px; }
+.modal-title { font-family:'DM Serif Display',serif; font-size:20px; }
+.modal-close { margin-left:auto; width:30px; height:30px; border:1px solid var(--border); border-radius:8px; background:transparent; color:var(--text-2); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.modal-close:hover { border-color:var(--red); color:var(--red); }
+.f-group { margin-bottom:16px; }
+.f-label { display:block; font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--text-3); margin-bottom:6px; }
+.f-req { color:var(--amber); }
+.f-input { width:100%; padding:10px 14px; background:var(--navy); color:var(--text-1); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s; }
+.f-input:focus { border-color:var(--amber-b); }
+.f-input::placeholder { color:var(--text-3); }
+.f-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-actions { display:flex; gap:10px; margin-top:24px; }
+.btn-cancel { flex:1; padding:11px; background:transparent; color:var(--text-2); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; font-size:14px; font-family:'DM Sans',sans-serif; transition:all .15s; }
+.btn-cancel:hover { border-color:var(--red); color:var(--red); }
+.btn-save { flex:2; padding:11px; background:var(--amber); color:var(--navy); border:none; border-radius:var(--radius-sm); cursor:pointer; font-size:14px; font-weight:600; font-family:'DM Sans',sans-serif; transition:all .2s; }
+.btn-save:hover { background:#f0b55c; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo" onclick="showPage('calendar')">T</div>
+  <div class="nav-icon active" id="nav-cal" onclick="showPage('calendar')" title="Calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+  </div>
+  <div class="nav-icon" title="Reservations">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+  </div>
+  <div class="nav-icon" title="Tables">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+  </div>
+  <div class="sidebar-spacer"></div>
+  <div class="nav-icon" id="nav-set" onclick="showPage('settings')" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  </div>
+</aside>
+
+<!-- CALENDAR PAGE -->
+<main class="main" id="calendarPage" style="display:flex;">
+  <div class="topbar">
+    <div class="venue-pill">
+      <div class="venue-dot"></div>
+      <div>
+        <div class="venue-name" id="venueName">Solymar</div>
+        <div class="venue-type" id="venueType">Restaurant</div>
+      </div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en',this)">EN</button>
+      <button class="lang-btn" onclick="setLang('th',this)">ภาษาไทย</button>
+    </div>
+    <div class="date-nav">
+      <button class="nav-btn" onclick="navigate(-1)">‹</button>
+      <div class="date-display" id="dateDisplay"></div>
+      <button class="nav-btn" onclick="navigate(1)">›</button>
+      <button class="today-btn" onclick="goToday()" id="todayBtn">Today</button>
+    </div>
+  </div>
+  <div class="view-controls">
+    <div class="view-tabs">
+      <div class="view-tab active" onclick="setView('day',this)">Day</div>
+      <div class="view-tab" onclick="setView('week',this)">Week</div>
+      <div class="view-tab" onclick="setView('month',this)">Month</div>
+    </div>
+    <div class="svc-tabs" id="svcTabs">
+      <div class="svc-tab active lunch"  onclick="setSvc('lunch',this)">Lunch</div>
+      <div class="svc-tab dinner"        onclick="setSvc('dinner',this)">Dinner</div>
+    </div>
+    <div class="disp-tabs" id="dispTabs">
+      <button class="disp-tab active" onclick="setDisp('list',this)" title="List">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
+      </button>
+      <button class="disp-tab" onclick="setDisp('map',this)" title="Map">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      </button>
+    </div>
+    <button class="add-btn" onclick="openModal(null)">
+      <span style="font-size:17px;line-height:1">+</span>
+      <span id="addBtnLbl">Add Reservation</span>
+    </button>
+  </div>
+  <div class="content" id="mainContent"></div>
+</main>
+
+<!-- SETTINGS PAGE -->
+<main class="main" id="settingsPage" style="display:none;">
+  <div class="topbar">
+    <div style="font-family:'DM Serif Display',serif;font-size:20px;">Venue Settings</div>
+    <button class="back-btn" style="margin-left:auto" onclick="saveSettings()">Save &amp; Back ›</button>
+  </div>
+  <div class="content">
+    <div class="settings-wrap">
+      <div class="s-title">Configure your venue</div>
+      <div class="s-sub">These settings affect how the calendar shows availability, opening hours, and services.</div>
+
+      <div class="s-section">
+        <div class="s-sec-title">Venue Info</div>
+        <div class="s-card">
+          <div class="s-row">
+            <div class="s-lbl">Venue name</div>
+            <input class="s-input" id="cfg-name" type="text" value="Solymar"/>
+          </div>
+          <div class="s-row">
+            <div class="s-lbl">Type</div>
+            <input class="s-input" id="cfg-type" type="text" value="Restaurant"/>
+          </div>
+          <div class="s-row">
+            <div class="s-lbl">Address</div>
+            <input class="s-input" id="cfg-address" type="text" placeholder="Via Roma 1, Riccione..."/>
+          </div>
+          <div class="s-row">
+            <div class="s-lbl">Phone</div>
+            <input class="s-input" id="cfg-phone" type="tel" placeholder="+39 0541 ..."/>
+          </div>
+          <div class="s-row">
+            <div class="s-lbl">Total capacity (covers)</div>
+            <input class="s-input" id="cfg-capacity" type="number" min="1" max="500" value="60" style="max-width:90px"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-sec-title">Weekly Closing Days</div>
+        <div class="s-card">
+          <div class="dow-grid">
+            <input type="checkbox" class="dow-chk" id="dow-0"><label class="dow-lbl" for="dow-0">Mon</label>
+            <input type="checkbox" class="dow-chk" id="dow-1"><label class="dow-lbl" for="dow-1">Tue</label>
+            <input type="checkbox" class="dow-chk" id="dow-2"><label class="dow-lbl" for="dow-2">Wed</label>
+            <input type="checkbox" class="dow-chk" id="dow-3"><label class="dow-lbl" for="dow-3">Thu</label>
+            <input type="checkbox" class="dow-chk" id="dow-4"><label class="dow-lbl" for="dow-4">Fri</label>
+            <input type="checkbox" class="dow-chk" id="dow-5"><label class="dow-lbl" for="dow-5">Sat</label>
+            <input type="checkbox" class="dow-chk" id="dow-6"><label class="dow-lbl" for="dow-6">Sun</label>
+          </div>
+          <div class="dow-note">Days marked red appear as closed in the calendar — no reservations can be added on those days.</div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-sec-title">Services</div>
+        <div class="sc-card">
+          <div class="sc-head">
+            <div class="sc-badge lunch">Lunch</div>
+            <label class="toggle">
+              <input type="checkbox" id="cfg-lunch-en" checked onchange="toggleSvcCfg('lunch')">
+              <span class="toggle-sl"></span>
+            </label>
+          </div>
+          <div id="cfg-lunch-body">
+            <div class="s-row">
+              <div class="s-lbl">Opening time</div>
+              <input class="s-input" id="cfg-lunch-open" type="time" value="12:00" style="max-width:120px"/>
+            </div>
+            <div class="s-row">
+              <div class="s-lbl">Last seating</div>
+              <input class="s-input" id="cfg-lunch-last" type="time" value="14:30" style="max-width:120px"/>
+            </div>
+            <div class="s-row">
+              <div class="s-lbl">Avg. duration (min)</div>
+              <input class="s-input" id="cfg-lunch-dur" type="number" min="30" max="300" step="15" value="120" style="max-width:90px"/>
+            </div>
+          </div>
+        </div>
+        <div class="sc-card">
+          <div class="sc-head">
+            <div class="sc-badge dinner">Dinner</div>
+            <label class="toggle">
+              <input type="checkbox" id="cfg-dinner-en" checked onchange="toggleSvcCfg('dinner')">
+              <span class="toggle-sl"></span>
+            </label>
+          </div>
+          <div id="cfg-dinner-body">
+            <div class="s-row">
+              <div class="s-lbl">Opening time</div>
+              <input class="s-input" id="cfg-dinner-open" type="time" value="19:30" style="max-width:120px"/>
+            </div>
+            <div class="s-row">
+              <div class="s-lbl">Last seating</div>
+              <input class="s-input" id="cfg-dinner-last" type="time" value="22:00" style="max-width:120px"/>
+            </div>
+            <div class="s-row">
+              <div class="s-lbl">Avg. duration (min)</div>
+              <input class="s-input" id="cfg-dinner-dur" type="number" min="30" max="300" step="15" value="150" style="max-width:90px"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitle">New Reservation</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="f-group">
+      <label class="f-label"><span class="f-req">* </span><span id="lbl-name">Guest Name</span></label>
+      <input class="f-input" id="f-name" type="text" placeholder="e.g. Rossi"/>
+    </div>
+    <div class="f-row">
+      <div class="f-group">
+        <label class="f-label"><span class="f-req">* </span><span id="lbl-guests">Guests</span></label>
+        <input class="f-input" id="f-guests" type="number" min="1" max="30" placeholder="2"/>
+      </div>
+      <div class="f-group">
+        <label class="f-label"><span class="f-req">* </span><span id="lbl-time">Time</span></label>
+        <input class="f-input" id="f-time" type="time" value="12:30"/>
+      </div>
+    </div>
+    <div class="f-group">
+      <label class="f-label"><span id="lbl-phone">Phone</span></label>
+      <input class="f-input" id="f-phone" type="tel" placeholder="+39 333 ..."/>
+    </div>
+    <div class="f-group">
+      <label class="f-label"><span id="lbl-note">Notes</span></label>
+      <input class="f-input" id="f-note" type="text" placeholder="Allergies, birthday, preferences..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save"   id="btnSave"   onclick="saveRes()">Save Reservation</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// STATE
+let currentDate    = new Date(2025, 0, 1);
+let currentView    = 'day';
+let currentSvc     = 'lunch';
+let currentDisplay = 'list';
+let lang           = 'en';
+
+// VENUE CONFIG
+let vc = {
+  name:'Solymar', type:'Restaurant', address:'',
+  closedDays: [],       // Mon-indexed: 0=Mon…6=Sun
+  lunch:  { enabled:true, open:'12:00', lastSeating:'14:30', duration:120 },
+  dinner: { enabled:true, open:'19:30', lastSeating:'22:00', duration:150 }
+};
+
+// I18N
+const S = {
+  en: { today:'Today', addRes:'Add Reservation', newRes:'New Reservation',
+        name:'Guest Name', guests:'Guests', time:'Time', phone:'Phone', note:'Notes',
+        cancel:'Cancel', save:'Save Reservation', covers:'covers',
+        addSlot:'Empty slot — click to add', mapFree:'Free', closed:'Closed', disabled:'is disabled' },
+  th: { today:'วันนี้', addRes:'เพิ่มการจอง', newRes:'การจองใหม่',
+        name:'ชื่อผู้จอง', guests:'จำนวนแขก', time:'เวลา', phone:'โทรศัพท์', note:'หมายเหตุ',
+        cancel:'ยกเลิก', save:'บันทึกการจอง', covers:'ที่นั่ง',
+        addSlot:'ช่องว่าง — คลิกเพื่อเพิ่ม', mapFree:'ว่าง', closed:'ปิด', disabled:'ถูกปิดการใช้งาน' }
+};
+const t = k => S[lang][k] || k;
+
+// DATA
+let reservations = {
+  lunch: [
+    {id:1,name:'Rossi',  guests:4,time:'12:15',phone:'+39 333 1234567',note:'Window seat preferred',table:3},
+    {id:2,name:'Conti',  guests:2,time:'12:45',phone:'+39 347 9876543',note:'Shellfish allergy',    table:7},
+    {id:3,name:'Ferrari',guests:6,time:'13:00',phone:'',               note:'Birthday 🎂',           table:11},
+    {id:4,name:'Bianchi',guests:3,time:'13:30',phone:'+39 320 5554321',note:'',                      table:2},
+  ],
+  dinner: [
+    {id:5,name:'Moretti', guests:2,time:'20:00',phone:'+39 366 1112223',note:'Anniversary',table:5},
+    {id:6,name:'Esposito',guests:5,time:'20:30',phone:'',               note:'',           table:9},
+  ]
+};
+let nextId=10, editingId=null, presetTable=null;
+
+const TABLES=[
+  {num:1,cap:2},{num:2,cap:4},{num:3,cap:4},{num:4,cap:2},{num:5,cap:4},{num:6,cap:6},
+  {num:7,cap:2},{num:8,cap:4},{num:9,cap:6},{num:10,cap:2},{num:11,cap:8},{num:12,cap:4},
+  {num:13,cap:2},{num:14,cap:4},{num:15,cap:4},{num:16,cap:2},{num:17,cap:4},{num:18,cap:6}
+];
+
+// HELPERS
+const sameDay   = (a,b) => a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+const monDOW    = d => (d.getDay()+6)%7;
+const isClosed  = d => vc.closedDays.includes(monDOW(d));
+const timeToMin = s => { const [h,m]=s.split(':').map(Number); return h*60+m; };
+const getRes    = s => reservations[s]||[];
+const resByTbl  = (s,n) => getRes(s).find(r=>r.table===n)||null;
+
+function weekStart(d){
+  const dd=new Date(d);
+  dd.setDate(dd.getDate()-monDOW(dd));
+  return dd;
+}
+
+// NAVIGATION
+function navigate(dir){
+  if(currentView==='day')   currentDate.setDate(currentDate.getDate()+dir);
+  if(currentView==='week')  currentDate.setDate(currentDate.getDate()+dir*7);
+  if(currentView==='month') currentDate.setMonth(currentDate.getMonth()+dir);
+  render();
+}
+function goToday(){ currentDate=new Date(); render(); }
+
+function formatDate(d){
+  const D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(currentView==='day')  return `${D[d.getDay()]}, ${M[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  if(currentView==='week'){
+    const ws=weekStart(d),we=new Date(ws); we.setDate(we.getDate()+6);
+    return `${M[ws.getMonth()]} ${ws.getDate()} – ${we.getDate()}, ${ws.getFullYear()}`;
+  }
+  return `${M[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// CONTROLS
+function setView(v,el){
+  currentView=v;
+  document.querySelectorAll('.view-tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const day=v==='day';
+  document.getElementById('svcTabs').style.display =day?'flex':'none';
+  document.getElementById('dispTabs').style.display=day?'flex':'none';
+  render();
+}
+function setSvc(s,el){
+  currentSvc=s;
+  document.querySelectorAll('.svc-tab').forEach(x=>x.classList.remove('active','lunch','dinner'));
+  el.classList.add('active',s);
+  render();
+}
+function setDisp(d,el){
+  currentDisplay=d;
+  document.querySelectorAll('.disp-tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function setLang(l,el){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  applyLang(); render();
+}
+function applyLang(){
+  document.getElementById('todayBtn').textContent  =t('today');
+  document.getElementById('addBtnLbl').textContent =t('addRes');
+  document.getElementById('lbl-name').textContent  =t('name');
+  document.getElementById('lbl-guests').textContent=t('guests');
+  document.getElementById('lbl-time').textContent  =t('time');
+  document.getElementById('lbl-phone').textContent =t('phone');
+  document.getElementById('lbl-note').textContent  =t('note');
+  document.getElementById('btnCancel').textContent =t('cancel');
+  document.getElementById('btnSave').textContent   =t('save');
+}
+
+// PAGES
+function showPage(p){
+  const isSt=p==='settings';
+  document.getElementById('calendarPage').style.display=isSt?'none':'flex';
+  document.getElementById('settingsPage').style.display=isSt?'flex':'none';
+  document.getElementById('nav-cal').classList.toggle('active',!isSt);
+  document.getElementById('nav-set').classList.toggle('active', isSt);
+  if(isSt) loadSettingsUI();
+}
+
+// SETTINGS
+function loadSettingsUI(){
+  document.getElementById('cfg-name').value    =vc.name;
+  document.getElementById('cfg-type').value    =vc.type;
+  document.getElementById('cfg-address').value =vc.address;
+  document.getElementById('cfg-phone').value   =vc.phone||'';
+  document.getElementById('cfg-capacity').value=vc.capacity||60;
+  for(let i=0;i<7;i++) document.getElementById('dow-'+i).checked=vc.closedDays.includes(i);
+  ['lunch','dinner'].forEach(s=>{
+    document.getElementById(`cfg-${s}-en`).checked  =vc[s].enabled;
+    document.getElementById(`cfg-${s}-open`).value  =vc[s].open;
+    document.getElementById(`cfg-${s}-last`).value  =vc[s].lastSeating;
+    document.getElementById(`cfg-${s}-dur`).value   =vc[s].duration;
+    toggleSvcCfg(s);
+  });
+}
+function toggleSvcCfg(s){
+  const en =document.getElementById(`cfg-${s}-en`).checked;
+  const bod=document.getElementById(`cfg-${s}-body`);
+  bod.style.opacity      =en?'1':'0.3';
+  bod.style.pointerEvents=en?'auto':'none';
+}
+function saveSettings(){
+  vc.name    =document.getElementById('cfg-name').value    ||'Venue';
+  vc.type    =document.getElementById('cfg-type').value    ||'Restaurant';
+  vc.address =document.getElementById('cfg-address').value ||'';
+  vc.phone   =document.getElementById('cfg-phone').value   ||'';
+  vc.capacity=parseInt(document.getElementById('cfg-capacity').value)||60;
+  vc.closedDays=[];
+  for(let i=0;i<7;i++) if(document.getElementById('dow-'+i).checked) vc.closedDays.push(i);
+  ['lunch','dinner'].forEach(s=>{
+    vc[s]={
+      enabled:    document.getElementById(`cfg-${s}-en`).checked,
+      open:       document.getElementById(`cfg-${s}-open`).value,
+      lastSeating:document.getElementById(`cfg-${s}-last`).value,
+      duration:   parseInt(document.getElementById(`cfg-${s}-dur`).value)||120,
+    };
+  });
+  document.getElementById('venueName').textContent=vc.name;
+  document.getElementById('venueType').textContent=vc.type;
+  showPage('calendar');
+  render();
+}
+
+// RENDER
+function render(){
+  document.getElementById('dateDisplay').textContent=formatDate(currentDate);
+  const mc=document.getElementById('mainContent');
+  if(currentView==='day')   renderDay(mc);
+  if(currentView==='week')  renderWeek(mc);
+  if(currentView==='month') renderMonth(mc);
+}
+
+// DAY VIEW
+function renderDay(mc){
+  if(isClosed(currentDate)){
+    mc.innerHTML=`<div class="closed-msg">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      <h3>${t('closed')}</h3>
+      <p style="font-size:13px">This day is marked as a closing day in your venue settings.</p>
+      <button class="set-link-btn" onclick="showPage('settings')">Open Settings</button>
+    </div>`; return;
+  }
+  const cfg=vc[currentSvc];
+  if(!cfg||!cfg.enabled){
+    mc.innerHTML=`<div class="closed-msg">
+      <h3>${currentSvc==='lunch'?'Lunch':'Dinner'} ${t('disabled')}</h3>
+      <p style="font-size:13px">Enable it in venue settings.</p>
+      <button class="set-link-btn" onclick="showPage('settings')">Open Settings</button>
+    </div>`; return;
+  }
+
+  const res=getRes(currentSvc);
+  const totalG=res.reduce((s,r)=>s+r.guests,0);
+  const isL=currentSvc==='lunch';
+
+  let html=`<div class="day-wrap">
+    <div class="service-header">
+      <div class="svc-badge ${currentSvc}">${isL?'Lunch':'Dinner'}</div>
+      <span class="svc-hours">${cfg.open} – ${cfg.lastSeating}</span>
+      <div class="stat-pills">
+        <div class="stat-pill"><span class="dot" style="background:var(--amber)"></span>${res.length} reservations</div>
+        <div class="stat-pill"><span class="dot" style="background:var(--green)"></span>${totalG} ${t('covers')}</div>
+      </div>
+    </div>`;
+
+  if(currentDisplay==='list'){
+    html+=`<table class="list-table"><thead><tr>
+      <th>Name</th><th>Guests</th><th>Time</th><th>Phone</th><th>Notes</th>
+    </tr></thead><tbody>`;
+    [...res].sort((a,b)=>a.time.localeCompare(b.time)).forEach(r=>{
+      html+=`<tr><td><div class="res-row" onclick="openModal(${r.id})">
+        <div class="res-name"><span class="tbl-badge">${r.table}</span>${r.name}</div>
+        <div class="res-guests"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>${r.guests}</div>
+        <div class="res-time ${isL?'lunch-t':'dinner-t'}">${r.time}</div>
+        <div class="res-phone">${r.phone||'—'}</div>
+        <div class="res-note">${r.note||''}</div>
+      </div></td></tr>`;
+    });
+    for(let i=0;i<3;i++){
+      html+=`<tr><td><div class="res-row empty" onclick="openModal(null)">
+        <div class="empty-hint" style="grid-column:1/-1"><span style="font-size:16px">+</span>${t('addSlot')}</div>
+      </div></td></tr>`;
+    }
+    html+=`</tbody></table>`;
+
+  } else {
+    html+=`<div class="map-wrap">
+      <div class="map-legend">
+        <div class="leg-item"><div class="leg-box free"></div>${t('mapFree')}</div>
+        <div class="leg-item"><div class="leg-box l-tak"></div>Lunch</div>
+        <div class="leg-item"><div class="leg-box d-tak"></div>Dinner</div>
+      </div>
+      <div class="floor-plan"><div class="floor-label">Indoor</div>`;
+    TABLES.forEach((tbl,i)=>{
+      if(i===12) html+=`<div class="floor-divider"></div>`;
+      const rl=resByTbl('lunch',tbl.num), rd=resByTbl('dinner',tbl.num);
+      const r=currentSvc==='lunch'?rl:rd;
+      const cls=rl?'taken-l':rd?'taken-d':'';
+      const oc=r?`openModal(${r.id})`:`openModal(null,${tbl.num})`;
+      html+=`<div class="tbl-cell ${cls}" onclick="${oc}">
+        <div class="tbl-num">T${tbl.num}</div>
+        ${r?`<div class="tbl-gname">${r.name}</div>`:''}
+        <div class="tbl-cap"><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>${tbl.cap}</div>
+        ${r?`<div class="tbl-tooltip"><div class="tt-name">${r.name}</div>
+          <div class="tt-row">⏰ ${r.time}</div>
+          <div class="tt-row">👥 ${r.guests} guests</div>
+          ${r.phone?`<div class="tt-row">📞 ${r.phone}</div>`:''}
+          ${r.note?`<div class="tt-row" style="font-style:italic">📝 ${r.note}</div>`:''}
+        </div>`:''}
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+  html+=`</div>`;
+  mc.innerHTML=html;
+}
+
+// WEEK VIEW — colored slot rows, no floating blocks
+function renderWeek(mc){
+  const ws=weekStart(currentDate);
+
+  // Compute visible hour range
+  const allMins=[];
+  ['lunch','dinner'].forEach(s=>{
+    if(vc[s].enabled){
+      allMins.push(timeToMin(vc[s].open));
+      allMins.push(timeToMin(vc[s].lastSeating)+vc[s].duration);
+    }
+  });
+  const startH = allMins.length ? Math.max(0,  Math.floor(Math.min(...allMins)/60)-1) : 10;
+  const endH   = allMins.length ? Math.min(24, Math.ceil( Math.max(...allMins)/60)+1) : 23;
+
+  // Build set: which hours belong to which service (half-hour resolution → use full hours)
+  function slotService(h){
+    // h is the start of a one-hour slot; returns 'lunch','dinner','both', or null
+    const hMin=h*60, hMax=hMin+60;
+    let isL=false, isD=false;
+    if(vc.lunch.enabled){
+      const lo=timeToMin(vc.lunch.open), lc=timeToMin(vc.lunch.lastSeating)+vc.lunch.duration;
+      if(hMin<lc && hMax>lo) isL=true;
+    }
+    if(vc.dinner.enabled){
+      const lo=timeToMin(vc.dinner.open), lc=timeToMin(vc.dinner.lastSeating)+vc.dinner.duration;
+      if(hMin<lc && hMax>lo) isD=true;
+    }
+    if(isL&&isD) return 'both';
+    if(isL) return 'lunch';
+    if(isD) return 'dinner';
+    return null;
+  }
+
+  const hours=[];
+  for(let h=startH;h<endH;h++) hours.push(h);
+
+  const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let html=`<div class="week-outer" style="height:calc(100vh - 196px)">
+    <div class="cal-hdr"><div class="hdr-cell"></div>`;
+  for(let i=0;i<7;i++){
+    const d=new Date(ws); d.setDate(d.getDate()+i);
+    const tod=sameDay(d,new Date()), clo=isClosed(d);
+    html+=`<div class="hdr-cell ${tod?'today':''} ${clo?'closed-h':''}">
+      ${DN[i]}<span class="hdr-num">${d.getDate()}</span>
+    </div>`;
+  }
+  html+=`</div><div class="week-scroll"><div class="week-grid"><div class="time-col">`;
+  hours.forEach(h=>{ html+=`<div class="time-slot">${String(h).padStart(2,'0')}:00</div>`; });
+  html+=`</div>`;
+
+  for(let i=0;i<7;i++){
+    const d=new Date(ws); d.setDate(d.getDate()+i);
+    const clo=isClosed(d);
+    const y=d.getFullYear(), mo=d.getMonth(), da=d.getDate();
+    html+=`<div class="day-col ${clo?'closed-col':''}">`;
+
+    if(clo){
+      hours.forEach(()=>{ html+=`<div class="day-slot no-hover"></div>`; });
+      html+=`<div class="closed-strip"><span class="closed-strip-lbl">Closed</span></div>`;
+    } else {
+      // Track whether we've already shown the label for each service this column
+      let shownL=false, shownD=false;
+      hours.forEach(h=>{
+        const svc=slotService(h);
+        // 'both' = overlap edge; show lunch color
+        const cls = svc==='lunch'||svc==='both' ? 'svc-lunch' : svc==='dinner' ? 'svc-dinner' : '';
+        const onclick = cls ? `onclick="goDay(${y},${mo},${da},'${svc==='dinner'?'dinner':'lunch'}')"` : '';
+        let label='';
+        if(cls==='svc-lunch' && !shownL){
+          shownL=true;
+          const res=getRes('lunch'); const cov=res.reduce((s,r)=>s+r.guests,0);
+          label=`<div class="slot-svc-label"><span class="ssl-name">Lunch</span><span class="ssl-info">${vc.lunch.open}–${vc.lunch.lastSeating} · ${res.length} res · ${cov} cov</span></div>`;
+        }
+        if(cls==='svc-dinner' && !shownD){
+          shownD=true;
+          const res=getRes('dinner'); const cov=res.reduce((s,r)=>s+r.guests,0);
+          label=`<div class="slot-svc-label"><span class="ssl-name">Dinner</span><span class="ssl-info">${vc.dinner.open}–${vc.dinner.lastSeating} · ${res.length} res · ${cov} cov</span></div>`;
+        }
+        html+=`<div class="day-slot ${cls}" ${onclick}>${label}</div>`;
+      });
+    }
+    html+=`</div>`;
+  }
+  html+=`</div></div></div>`;
+  mc.innerHTML=html;
+}
+
+function goDay(y,mo,d,svc){
+  currentDate=new Date(y,mo,d);
+  currentView='day'; currentSvc=svc;
+  document.querySelectorAll('.view-tab').forEach((x,i)=>x.classList.toggle('active',i===0));
+  document.getElementById('svcTabs').style.display ='flex';
+  document.getElementById('dispTabs').style.display='flex';
+  document.querySelectorAll('.svc-tab').forEach(x=>{
+    x.classList.remove('active','lunch','dinner');
+    if(x.textContent.toLowerCase()===svc) x.classList.add('active',svc);
+  });
+  render();
+}
+
+// MONTH VIEW
+function renderMonth(mc){
+  const year=currentDate.getFullYear(), month=currentDate.getMonth();
+  const first=new Date(year,month,1), last=new Date(year,month+1,0);
+  const offset=monDOW(first);
+  const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let html=`<div><div class="month-grid">`;
+  DN.forEach(d=>{ html+=`<div class="month-dow">${d}</div>`; });
+
+  for(let i=0;i<offset;i++){
+    const d=new Date(year,month,-(offset-1-i));
+    html+=`<div class="month-cell other-m"><div class="m-day-num">${d.getDate()}</div></div>`;
+  }
+  for(let d=1;d<=last.getDate();d++){
+    const dd=new Date(year,month,d);
+    const tod=sameDay(dd,new Date()), clo=isClosed(dd);
+    html+=`<div class="month-cell ${tod?'today-cell':''} ${clo?'closed-cell':''}" onclick="${clo?'void(0)':'goDay('+year+','+month+','+d+',\'lunch\')'}">
+      <div class="m-day-num">${d}</div>`;
+    if(clo){
+      html+=`<div class="m-closed-tag">Closed</div>`;
+    } else {
+      if(vc.lunch.enabled)  html+=`<div class="m-pill l-pill">Lunch · ${getRes('lunch').length}</div>`;
+      if(vc.dinner.enabled) html+=`<div class="m-pill d-pill">Dinner · ${getRes('dinner').length}</div>`;
+    }
+    html+=`</div>`;
+  }
+  const total=offset+last.getDate(), rem=total%7===0?0:7-(total%7);
+  for(let i=1;i<=rem;i++){
+    html+=`<div class="month-cell other-m"><div class="m-day-num">${i}</div></div>`;
+  }
+  html+=`</div></div>`;
+  mc.innerHTML=html;
+}
+
+// MODAL
+function openModal(resId,tableNum){
+  editingId=resId||null; presetTable=tableNum||null;
+  const all=[...reservations.lunch,...reservations.dinner];
+  const r=resId?all.find(x=>x.id===resId):null;
+  document.getElementById('modalTitle').textContent=r?`Edit — ${r.name}`:t('newRes');
+  document.getElementById('f-name').value  =r?r.name  :'';
+  document.getElementById('f-guests').value=r?r.guests:'';
+  document.getElementById('f-time').value  =r?r.time  :(currentSvc==='lunch'?vc.lunch.open:vc.dinner.open);
+  document.getElementById('f-phone').value =r?r.phone :'';
+  document.getElementById('f-note').value  =r?r.note  :'';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+function saveRes(){
+  const name  =document.getElementById('f-name').value.trim();
+  const guests=parseInt(document.getElementById('f-guests').value);
+  const time  =document.getElementById('f-time').value;
+  if(!name||!guests||!time){ alert('Please fill: Name, Guests, Time'); return; }
+  const payload={name,guests,time,
+    phone:document.getElementById('f-phone').value,
+    note: document.getElementById('f-note').value};
+  if(editingId){
+    ['lunch','dinner'].forEach(s=>{
+      const idx=reservations[s].findIndex(r=>r.id===editingId);
+      if(idx!==-1) reservations[s][idx]={...reservations[s][idx],...payload};
+    });
+  } else {
+    const tbl=presetTable||(reservations[currentSvc].length+1);
+    reservations[currentSvc].push({id:nextId++,table:tbl,...payload});
+  }
+  closeModal(); render();
+}
+
+// KEYBOARD/CLICK
+document.getElementById('modalOverlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+// INIT
+render();
+applyLang();
+</script>
+</body>
+</html>
